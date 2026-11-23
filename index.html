@@ -1,0 +1,1463 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; object-src 'self' blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Assays</title>
+<meta name="description" content="Your Abbott Alinity IFUs: find one fast, see its key numbers, search inside all of them. Reads from your own Google Drive.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#131A24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#131A24; --panel:#18212D; --raise:#212C3A; --sunk:#0F151D;
+  --line:#2C3848; --line-2:#222C3A;
+  --ink:#F1F5F9; --ink-2:#C5CFDA; --muted:#93A0AF; --faint:#66737F;
+  --c:#6FC9B4; --c-soft:rgba(111,201,180,.13);
+  --i:#B3A4F2; --i-soft:rgba(179,164,242,.14);
+  --ok:#7FD1A2; --warn:#EBBE55; --bad:#F2806F; --warn-soft:rgba(235,190,85,.12);
+  --link:#79B8F0; --mark:rgba(235,190,85,.28);
+  --act:#E9EFF6; --act-ink:#131A24;
+  --sh:0 18px 50px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.35);
+  --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --font-d:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --top:64px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:default;opacity:.45}
+:focus-visible{outline:2px solid var(--ink-2);outline-offset:2px;border-radius:8px}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+kbd{font:600 11px/1 var(--font);padding:3px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;color:var(--muted);background:var(--panel)}
+.num{font-variant-numeric:tabular-nums}
+a{color:var(--link)}
+.mut{color:var(--muted)}
+.fine{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.hint{color:var(--muted);font-size:13px}
+
+/* ---------- top bar ---------- */
+.top{height:var(--top);display:flex;align-items:center;gap:16px;padding:0 max(18px,env(safe-area-inset-right)) 0 max(18px,env(safe-area-inset-left));background:var(--bg);border-bottom:1px solid var(--line-2)}
+.brand{display:flex;align-items:center;gap:10px;width:286px;flex:none;font:650 19px/1 var(--font-d);letter-spacing:-.005em;white-space:nowrap}
+.mark{position:relative;width:14px;height:22px;border:2px solid var(--ink-2);border-top:0;border-radius:0 0 4px 4px}
+.mark::after{content:"";position:absolute;left:1px;right:1px;bottom:1px;height:9px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,var(--c) 50%,var(--i) 50%)}
+.search{position:relative;flex:1;max-width:760px;display:flex;align-items:center}
+.search .si-ic{position:absolute;left:14px;color:var(--muted);pointer-events:none;display:flex}
+.search input{width:100%;height:44px;padding:0 84px 0 44px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);font:16px/1 var(--font);outline:none}
+.search input:focus{border-color:#4A5B70;background:var(--raise)}
+.search input::placeholder{color:var(--faint)}
+.search input::-webkit-search-cancel-button{display:none}
+.search .qx{position:absolute;right:46px;height:28px;padding:0 8px;border:0;border-radius:6px;background:none;color:var(--muted);font-size:13px}
+.search .qx:hover{color:var(--ink);background:var(--line-2)}
+.search kbd{position:absolute;right:12px;pointer-events:none}
+.search input:focus ~ kbd{opacity:0}
+.right{display:flex;align-items:center;gap:6px;margin-left:auto}
+.ib{display:inline-grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:none;color:var(--ink-2);flex:none}
+.ib:hover:not(:disabled){background:var(--raise);color:var(--ink)}
+.pill{display:inline-flex;align-items:center;gap:8px;height:34px;max-width:220px;padding:0 12px;border:1px solid var(--line);border-radius:17px;background:none;color:var(--ink-2);font-size:13px;font-weight:550}
+.pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.pill.local .dot{background:var(--faint)}
+.pill.busy .dot{background:var(--warn);animation:pulse 1.1s ease-in-out infinite}
+.pill.off .dot{background:var(--warn)}
+.pill.err{border-color:var(--bad);color:var(--bad)} .pill.err .dot{background:var(--bad)}
+@keyframes pulse{50%{opacity:.3}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font-weight:600;font-size:14px;white-space:nowrap;text-decoration:none}
+.btn:hover:not(:disabled){background:var(--raise)}
+.btn.primary{background:var(--act);border-color:var(--act);color:var(--act-ink)}
+.btn.primary:hover:not(:disabled){background:#fff}
+.btn.danger{color:var(--bad)}
+.btn.sm{height:30px;padding:0 11px;font-size:13px;border-radius:8px}
+.btn svg.i{width:16px;height:16px}
+.btn kbd{margin-left:2px;background:transparent;border-color:rgba(19,26,36,.25);color:inherit;opacity:.65}
+.field{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--sunk);color:var(--ink);font:inherit;outline:none}
+.field:focus{border-color:#4A5B70}
+
+/* ---------- layout ---------- */
+.main{display:grid;grid-template-columns:320px minmax(0,1fr);height:calc(100dvh - var(--top))}
+.list{grid-column:1;grid-row:1;overflow:auto;padding:12px 10px 40px;border-right:1px solid var(--line-2);scrollbar-width:thin}
+.detail{grid-column:2;grid-row:1;overflow:auto;scrollbar-width:thin}
+.pdf{grid-column:2;grid-row:1;z-index:6;display:flex;flex-direction:column;min-height:0;background:var(--sunk);border-left:1px solid var(--line-2)}
+
+/* ---------- list ---------- */
+.filters{display:flex;gap:6px;padding:2px 6px 10px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:14px;background:none;color:var(--ink-2);font-size:13px;font-weight:550}
+.chip .n{color:var(--faint);font-size:12px}
+.chip.on{background:var(--raise);border-color:#3A495C;color:var(--ink)}
+.grp{margin-top:6px}
+.gh{display:flex;justify-content:space-between;align-items:baseline;padding:10px 10px 4px;color:var(--muted);font-size:12.5px;font-weight:600}
+.gh .n{color:var(--faint);font-weight:500}
+.row{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:none;color:var(--ink-2);text-align:left;text-decoration:none;font-size:14.5px}
+.row:hover{background:var(--panel);color:var(--ink)}
+.row.on{background:var(--raise);color:var(--ink);box-shadow:inset 2px 0 0 var(--ink-2)}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sub{flex:none;color:var(--muted);font-size:12.5px}
+.row .star{color:var(--warn);display:flex} .row .star svg{width:14px;height:14px;fill:currentColor}
+.row.extra .nm{color:var(--muted)}
+.row.link{color:var(--link)} .row.link b{font-weight:600}
+.pc{display:inline-grid;place-items:center;width:20px;height:20px;flex:none;border-radius:6px;font:700 12px/1 var(--font);text-transform:lowercase}
+.pc-c{background:var(--c-soft);color:var(--c)}
+.pc-i{background:var(--i-soft);color:var(--i)}
+.pc-x{color:var(--muted)} .pc-x svg{width:15px;height:15px}
+.sig{margin-left:6px;color:var(--muted);font-size:12px}
+.none{padding:12px 10px;color:var(--muted)}
+.list .none{font-size:14px}
+
+/* ---------- detail ---------- */
+.dh{position:sticky;top:0;z-index:3;display:flex;align-items:flex-start;gap:16px;padding:22px 32px 16px;background:linear-gradient(var(--bg) 82%,rgba(19,26,36,0))}
+.titles{flex:1;min-width:0}
+.dh h1{margin:0;font:650 30px/1.15 var(--font-d);letter-spacing:-.012em}
+.dh .tag{margin-left:10px;padding:2px 8px;border:1px solid var(--line);border-radius:6px;color:var(--muted);font:600 12px/1.4 var(--font);vertical-align:middle}
+.dh .meta{margin:6px 0 0;color:var(--muted);font-size:13.5px;white-space:pre-wrap}
+.acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding-top:2px}
+.pinb.on{color:var(--warn)} .pinb.on svg{fill:currentColor}
+.dbody{padding:4px 32px 64px;max-width:1180px}
+.dbody h2{margin:0;font:650 15px/1.3 var(--font-d);color:var(--ink-2)}
+.blank{padding:80px 40px;max-width:560px;color:var(--ink-2)}
+.blank p{margin:0 0 12px}
+.pg{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--link);font-size:12px;font-weight:600;white-space:nowrap}
+button.pg:hover{background:var(--raise)}
+.pg.warn{border-color:rgba(235,190,85,.45);color:var(--warn);background:var(--warn-soft)}
+
+/* key numbers */
+.kn{margin-top:8px}
+.kn-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.kn-head .fine{margin:0}
+.toggle{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;cursor:pointer}
+.toggle input{accent-color:var(--ink-2)}
+.hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr);gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:14px;overflow:hidden}
+.cell{padding:16px 18px 18px;background:var(--panel);text-align:left;border:0;color:inherit;font-size:14.5px}
+.cell .lab,.card .lab{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:600}
+.cell.big > div:nth-child(2){font:600 26px/1.25 var(--font-d);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.cell.big .si{font-size:16px}
+.cell.ref{cursor:pointer;background:var(--panel)}
+.cell.ref:hover:not(:disabled){background:var(--raise)}
+.cell.ref .go{color:var(--link);font-size:13.5px}
+.si{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid rgba(121,184,240,.3);border-radius:999px;color:var(--link);font:500 12.5px/1.6 var(--font);white-space:nowrap;vertical-align:middle}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-top:14px}
+.card{padding:14px 16px 16px;border:1px solid var(--line-2);border-radius:12px;background:var(--panel);font-size:14px;min-width:0}
+.card .ln{padding:2px 0}
+.card .prose{margin:0;color:var(--ink-2)}
+.card p{margin:0}
+.sec + .sec{margin-top:8px}
+.sec .sl{color:var(--muted);font-size:12.5px;margin-bottom:2px}
+.sec.no .ln{color:var(--ink-2)}
+.sec.no .sl{color:var(--bad)}
+details.more{margin-top:8px;color:var(--muted);font-size:13px}
+details.more summary{cursor:pointer}
+table.prec{width:100%;border-collapse:collapse;font-size:13.5px}
+table.prec th{padding:2px 8px 4px 0;color:var(--muted);font-weight:600;text-align:left;font-size:12.5px}
+table.prec td{padding:4px 8px 4px 0;border-top:1px solid var(--line-2);vertical-align:top}
+table.prec .r{text-align:right;padding-right:0}
+
+/* matches */
+.matches{margin:4px 0 22px;padding:14px 16px;border:1px solid rgba(235,190,85,.25);border-radius:12px;background:rgba(235,190,85,.04)}
+.matches h2{display:flex;gap:8px;align-items:baseline;margin-bottom:8px}
+.matches h2 .n{margin-left:auto;color:var(--muted);font:500 13px var(--font)}
+.hit{display:flex;gap:12px;align-items:flex-start;width:100%;padding:8px 6px;border:0;border-top:1px solid var(--line-2);background:none;color:var(--ink-2);text-align:left;font-size:13.5px;line-height:1.5;border-radius:0}
+.hit:hover{background:var(--panel)}
+.hit .pg{margin-top:1px}
+mark{background:var(--mark);color:var(--ink);border-radius:3px;padding:0 1px}
+
+/* note */
+.mynote{margin-top:26px;max-width:760px}
+.mynote h2{margin-bottom:8px}
+.note{resize:vertical;min-height:48px;line-height:1.5}
+.note-box{margin-top:8px;padding:16px 18px;border:1px solid var(--line-2);border-radius:12px;background:var(--panel);max-width:640px}
+.note-box p{margin:0 0 6px}
+
+/* PDF pane */
+.phead{display:flex;align-items:center;gap:10px;height:52px;padding:0 10px 0 18px;border-bottom:1px solid var(--line-2);background:var(--bg)}
+.pt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pframe{flex:1;width:100%;border:0;background:#525659}
+.pstatus{margin:auto;text-align:center;color:var(--ink-2);padding:30px}
+.bar{width:220px;height:3px;margin:0 auto 14px;border-radius:2px;background:var(--line);overflow:hidden}
+.bar i{display:block;width:40%;height:100%;background:var(--ink-2);animation:slide 1.1s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+
+/* welcome */
+.welcome{grid-column:1/-1;max-width:600px;margin:9vh auto 0;padding:0 24px}
+.welcome h2{margin:0 0 10px;font:650 26px/1.2 var(--font-d)}
+.welcome p{color:var(--ink-2)}
+.welcome .bar{margin:22px 0}
+.steps{padding-left:22px;color:var(--ink-2)} .steps li{margin:6px 0}
+details.paste{margin-top:18px;color:var(--muted)} details.paste summary{cursor:pointer}
+details.paste .row{display:flex;gap:8px;margin-top:10px;padding:0}
+details.paste .row:hover{background:none}
+
+/* ---------- dialogs, toasts ---------- */
+.scrim{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(6,9,14,.62)}
+.modal{width:min(520px,100%);max-height:calc(100dvh - 40px);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--sh)}
+.modal.wide{width:min(660px,100%)}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:16px 14px 6px 22px}
+.mhead h2{margin:0;font:650 18px/1.3 var(--font-d)}
+.mbody{padding:6px 22px 18px;overflow:auto}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line-2)}
+.mtext{margin:0 0 10px;color:var(--ink-2)}
+.settings section{padding:12px 0 14px;border-bottom:1px solid var(--line-2)}
+.settings section:last-of-type{border-bottom:0}
+.settings h3{margin:0 0 6px;font:650 14px/1.3 var(--font-d)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.warnline{margin:0 0 10px;padding:8px 10px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:13.5px}
+.fl{display:grid;gap:6px;margin:8px 0 10px;color:var(--muted);font-size:13px}
+.keys-t{width:100%;border-collapse:collapse;margin:4px 0 14px;font-size:14px}
+.keys-t td{padding:6px 10px 6px 0;border-top:1px solid var(--line-2);color:var(--ink-2);vertical-align:top}
+.keys-t td:first-child{white-space:nowrap;width:1%}
+.keys kbd + kbd{margin-left:4px}
+.toasts{position:fixed;left:50%;bottom:22px;z-index:60;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 32px)}
+.toast{display:flex;align-items:center;gap:14px;padding:11px 14px 11px 16px;border:1px solid var(--line);border-radius:12px;background:var(--raise);box-shadow:var(--sh);font-size:14px}
+.toast button{border:0;background:none;color:var(--link);font-weight:600;padding:2px 4px}
+.elsewhere{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;background:var(--bg)}
+
+/* ---------- narrow screens ---------- */
+@media (max-width:1180px){ .hero{grid-template-columns:1fr 1fr} .hero .ref{grid-column:1/-1} }
+@media (max-width:820px){
+  :root{--top:60px}
+  .brand{width:auto} .brand .word{display:none}
+  .pill span{display:none} .pill{padding:0 11px}
+  .main{grid-template-columns:1fr}
+  .list,.detail,.pdf{grid-column:1}
+  .detail{display:none}
+  body.show-detail .list{display:none}
+  body.show-detail .detail{display:block}
+  .dh{padding:14px 16px 12px;flex-wrap:wrap}
+  .dh h1{font-size:24px}
+  .acts{width:100%;justify-content:flex-start}
+  .dbody{padding:4px 16px 48px}
+  .hero{grid-template-columns:1fr}
+  .search kbd{display:none}
+}
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark" aria-hidden="true"></span><span class="word">Assays</span></div>
+  <div class="search" role="search">
+    <span class="si-ic" id="qicon"></span>
+    <input id="q" type="search" autocomplete="off" spellcheck="false" aria-label="Search assays and IFU text" placeholder="Search your IFUs" disabled>
+    <button class="qx" id="qclear" type="button" hidden>Clear</button>
+    <kbd>/</kbd>
+  </div>
+  <div class="right">
+    <button class="pill" id="sync-pill" type="button"></button>
+    <button class="ib" id="settings-btn" aria-label="Settings"></button>
+    <button class="ib" id="help-btn" aria-label="Help (?)"></button>
+  </div>
+</header>
+<main class="main" id="main"></main>
+<div id="modal-root"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="elsewhere" id="elsewhere" hidden></div>
+<script>
+const BUILD = "1.0 · 75785f";
+/* ============ Assays logic: pure functions, no page access (tested in Node) ============ */
+(function (root) {
+  const AL = {};
+
+  /* ---------- text normalisation ---------- */
+  // Lower case, no accents, Greek letters spelled out, punctuation to spaces.
+  function fold(s) {
+    return String(s == null ? '' : s)
+      .replace(/[βß]/g, 'b').replace(/[αɑ]/g, 'a').replace(/γ/g, 'g').replace(/[µμ]/g, 'u')
+      .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase();
+  }
+  const words = s => fold(s).replace(/[∙·•]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
+  const squash = s => words(s).join('');
+  AL.fold = fold; AL.words = words; AL.squash = squash;
+
+  const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
+  function revKey(rev) {   // "Revised February 2018" -> 201802
+    const m = /([A-Za-z]+)\s+(\d{4})/.exec(rev || '');
+    return m ? Number(m[2]) * 100 + (MONTHS[m[1].toLowerCase()] || 0) : 0;
+  }
+  AL.revKey = revKey;
+
+  // Short display name: "Alanine Aminotransferase2" stays (Abbott's own name), "A1AT — Alinity" -> "A1AT".
+  function displayName(d) { return String(d.title || '').replace(/\s+—\s+Alinity.*$/, '').trim(); }
+  AL.displayName = displayName;
+  function platformCode(d) {
+    const p = String(d.platform || '');
+    return /alinity c/i.test(p) ? 'c' : /alinity i/i.test(p) ? 'i' : '';
+  }
+  AL.platformCode = platformCode;
+
+  /* ---------- index ---------- */
+  // Prepares a library for searching: name keys for every doc, folded page text.
+  function buildIndex(lib) {
+    const docs = (lib && Array.isArray(lib.docs) ? lib.docs : []).map(d => {
+      const names = [displayName(d), d.title, ...(d.aliases || [])].filter(Boolean);
+      const keys = [...new Set(names.map(squash).filter(Boolean))];
+      const toks = [...new Set(names.flatMap(words))];
+      return Object.assign({}, d, {
+        name: displayName(d), pc: platformCode(d), rk: revKey(d.revision),
+        _keys: keys, _toks: toks, _title: squash(displayName(d)),
+        _pages: (d.pages || []).map(p => fold(p)),
+      });
+    });
+    const byId = new Map(docs.map(d => [d.id, d]));
+    return { docs, byId, version: lib && lib.version, built: lib && lib.built };
+  }
+  AL.buildIndex = buildIndex;
+
+  /* ---------- name search: what you type to open an IFU ---------- */
+  // Returns docs ranked by how well the query names them (score > 0 only).
+  function searchNames(ix, q, opts = {}) {
+    const qs = squash(q), qt = words(q);
+    if (!qs) return [];
+    const out = [];
+    for (const d of ix.docs) {
+      let s = 0;
+      for (const k of d._keys) {
+        let v = 0;
+        if (k === qs) v = 100;
+        else if (k.startsWith(qs)) v = 80 - Math.min(20, k.length - qs.length);
+        else if (qs.length >= 5 && k.includes(qs)) v = 45;
+        if (k === d._title && v) v += 6;   // the assay's own name beats an alias
+        if (v > s) s = v;
+      }
+      if (!s && qt.length > 1 && qt.every(t => d._toks.some(w => w.startsWith(t)))) s = 55;
+      if (!s && qt.length === 1 && qt[0].length >= 2 && d._toks.some(w => w.startsWith(qt[0]))) s = 50;
+      if (!s) continue;
+      if (opts.pins && opts.pins.has(d.id)) s += 4;
+      out.push({ d, s });
+    }
+    out.sort((a, b) => b.s - a.s || b.d.rk - a.d.rk || a.d.name.length - b.d.name.length || a.d.name.localeCompare(b.d.name));
+    return out.map(x => x.d);
+  }
+  AL.searchNames = searchNames;
+
+  /* ---------- full-text search inside the IFUs ---------- */
+  // "biotin interference" finds pages containing both words; "\"hook effect\"" finds the phrase.
+  // IFUs use US spelling: "haemolysis" searches for "hemolysis", "oestradiol" for "estradiol".
+  const SPELL = [[/aem/g, 'em'], [/^oe(?=st|de|so)/, 'e'], [/^foet/, 'fet'], [/rhoea/g, 'rhea'], [/^caerul/, 'cerul'], [/^paed/, 'ped'],
+    [/sulph/g, 'sulf'], [/^leuc/, 'leuk'], [/our$/, 'or'], [/^(lit|cent|met|fib)re$/, '$1er'], [/^(lit|cent|met|fib)res$/, '$1ers']];
+  function usSpelling(t) { for (const [re, to] of SPELL) t = t.replace(re, to); return t; }
+  AL.usSpelling = usSpelling;
+  function parseTextQuery(q) {
+    const phrases = [], rest = String(q || '').replace(/"([^"]+)"/g, (_, p) => { const f = words(p).map(usSpelling).join(' '); if (f) phrases.push(f); return ' '; });
+    const terms = words(rest).map(usSpelling).filter(t => t.length >= 2 || /\d/.test(t));
+    return { phrases, terms, all: [...phrases, ...terms] };
+  }
+  AL.parseTextQuery = parseTextQuery;
+
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  // A term matches at a word start, so "mg" doesn't hit "mmg"... but "hook" hits "hook-effect".
+  function termRe(t) { return new RegExp('(^|[^a-z0-9])' + escRe(t).replace(/ /g, '[^a-z0-9]+'), 'g'); }
+  AL.termRe = termRe;
+
+  function countHits(text, re) { re.lastIndex = 0; let n = 0; while (re.exec(text)) { n++; if (n > 50) break; } return n; }
+
+  function searchText(ix, q, opts = {}) {
+    const pq = parseTextQuery(q);
+    if (!pq.all.length || pq.all.join('').length < 3) return { groups: [], pages: 0, terms: pq.all };
+    const res = pq.all.map(termRe);
+    const groups = [];
+    let pages = 0;
+    const docs = opts.docId ? [ix.byId.get(opts.docId)].filter(Boolean) : ix.docs;
+    for (const d of docs) {
+      const hits = [];
+      d._pages.forEach((t, i) => {
+        let score = 0;
+        for (const re of res) { const n = countHits(t, re); if (!n) return; score += Math.min(n, 10); }
+        hits.push({ page: i + 1, score });
+      });
+      if (!hits.length) continue;
+      pages += hits.length;
+      groups.push({ d, hits, score: hits.reduce((s, h) => s + h.score, 0) });
+    }
+    groups.sort((a, b) => b.score - a.score || a.d.name.localeCompare(b.d.name));
+    return { groups, pages, terms: pq.all };
+  }
+  AL.searchText = searchText;
+
+  // A short excerpt around the first match on a page, split into plain and marked parts.
+  function snippet(rawPage, terms, width = 170) {
+    const raw = String(rawPage || '').replace(/\s+/g, ' ');
+    const f = fold(raw);
+    if (f.length !== raw.length) return plainSnippet(raw, terms, width);
+    let at = -1, len = 0;
+    for (const t of terms) {
+      const re = termRe(t); const m = re.exec(f);
+      if (m && (at < 0 || m.index < at)) { at = m.index + m[1].length; len = m[0].length - m[1].length; }
+    }
+    if (at < 0) return [{ t: raw.slice(0, width) + (raw.length > width ? '…' : '') }];
+    let start = Math.max(0, at - Math.floor((width - len) / 2));
+    let end = Math.min(raw.length, start + width);
+    start = Math.max(0, end - width);
+    if (start > 0) { const sp = raw.indexOf(' ', start); if (sp > 0 && sp < at) start = sp + 1; }
+    if (end < raw.length) { const sp = raw.lastIndexOf(' ', end); if (sp > at + len) end = sp; }
+    return markParts(raw.slice(start, end), f.slice(start, end), terms, start > 0, end < raw.length);
+  }
+  function plainSnippet(raw, terms, width) {   // lengths differ after folding (rare): mark nothing, still centre on the hit
+    const f = fold(raw); let at = -1;
+    for (const t of terms) { const i = f.indexOf(t); if (i >= 0 && (at < 0 || i < at)) at = i; }
+    const start = Math.max(0, at - 70);
+    return [{ t: (start ? '…' : '') + raw.slice(start, start + width) + (start + width < raw.length ? '…' : '') }];
+  }
+  function markParts(rawPart, foldPart, terms, pre, post) {
+    const marks = [];
+    for (const t of terms) {
+      const re = termRe(t); let m;
+      while ((m = re.exec(foldPart))) { marks.push([m.index + m[1].length, m.index + m[0].length]); if (marks.length > 40) break; }
+    }
+    marks.sort((a, b) => a[0] - b[0]);
+    const parts = []; let last = 0;
+    if (pre) parts.push({ t: '…' });
+    for (const [a, b] of marks) {
+      if (a < last) continue;
+      if (a > last) parts.push({ t: rawPart.slice(last, a) });
+      parts.push({ t: rawPart.slice(a, b), m: true });
+      last = b;
+    }
+    if (last < rawPart.length) parts.push({ t: rawPart.slice(last) });
+    if (post) parts.push({ t: '…' });
+    return parts;
+  }
+  AL.snippet = snippet;
+
+  /* ---------- live catalogue links ---------- */
+  AL.mayoUrl = term => 'https://www.mayocliniclabs.com/search?q=' + encodeURIComponent(String(term || '').trim());
+  AL.SGH_CATALOGUE = 'https://www.sgh.com.sg/our-specialties/pathology/pathology-lab-services';
+
+  // Best SGH test for an assay: every word of the assay's SGH term must appear in the test name.
+  function sghMatch(tests, term) {
+    const want = words(term);
+    if (!want.length || !Array.isArray(tests)) return null;
+    let best = null;
+    for (const t of tests) {
+      const nw = words(t.n);
+      if (!want.every(w => nw.some(x => x === w || (w.length >= 3 && x.startsWith(w))))) continue;
+      const extra = nw.length - want.length;
+      const urine = /urine|csf|fluid|24 ?h/i.test(t.n) && !/urine|csf/i.test(term) ? 4 : 0;
+      const s = extra + urine;
+      if (!best || s < best.s) best = { t, s };
+    }
+    return best ? best.t : null;
+  }
+  AL.sghMatch = sghMatch;
+
+  /* ---------- pins and notes (one synced record per assay) ---------- */
+  AL.userId = docId => 'u:' + docId;
+  // Two devices changed the same assay: keep the later pin; never lose note text.
+  function mergeUser(base, mine, theirs) {
+    base = base || {};
+    const out = Object.assign({}, theirs);
+    const mt = Date.parse(mine.updated_at || 0) || 0, tt = Date.parse(theirs.updated_at || 0) || 0;
+    if (mine.pin !== theirs.pin) out.pin = (mine.pin === base.pin) ? theirs.pin : (theirs.pin === base.pin) ? mine.pin : (mt >= tt ? mine.pin : theirs.pin);
+    const mn = mine.note || '', tn = theirs.note || '', bn = base.note || '';
+    if (mn === tn) out.note = mn;
+    else if (mn === bn) out.note = tn;
+    else if (tn === bn) out.note = mn;
+    else if (mn.includes(tn)) out.note = mn;
+    else if (tn.includes(mn)) out.note = tn;
+    else out.note = mn + '\n\n— also written on another PC —\n' + tn;
+    out.updated_at = mt >= tt ? mine.updated_at : theirs.updated_at;
+    if (!out.note) delete out.note;
+    return out;
+  }
+  AL.mergeUser = mergeUser;
+  AL.deepEq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  /* ---------- unit conversions (from Flow's assay units; source value always kept) ---------- */
+  const UNIT_RULES = [
+    { id: 'vitamin-d2-25', when: /25[^a-z0-9]*(?:oh|hydroxy).*vitamin d|vitamin d.*25/, near: /\b25[\s-]*hydroxy\s+d2\b/, from: 'ng/ml', to: 'nmol/l', fromLabel: 'ng/mL', toLabel: 'nmol/L', factor: 2.423 },
+    { id: 'vitamin-d-total-25', when: /25[^a-z0-9]*(?:oh|hydroxy).*vitamin d|vitamin d.*25/, exclude: /24[^a-z0-9]*25|\bratio\b/, from: 'ng/ml', to: 'nmol/l', fromLabel: 'ng/mL', toLabel: 'nmol/L', factor: 2.496 },
+    { id: 'ammonia', when: /ammonia|ammonium/, from: 'ug/dl', to: 'umol/l', fromLabel: 'µg/dL', toLabel: 'µmol/L', factor: .59 },
+    { id: 'bilirubin', when: /bilirubin/, from: 'mg/dl', to: 'umol/l', fromLabel: 'mg/dL', toLabel: 'µmol/L', factor: 17.1 },
+    { id: 'calcium', when: /calcium/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .25 },
+    { id: 'cholesterol', when: /cholesterol|\bhdl\b|\bldl\b/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .0259 },
+    { id: 'cortisol', when: /cortisol(?!.*urine)|hydrocortisone/, from: 'ug/dl', to: 'nmol/l', fromLabel: 'µg/dL', toLabel: 'nmol/L', factor: 27.6 },
+    { id: 'creatinine-serum', when: /creatinine/, exclude: /urine|24 hour|24-hour/, from: 'mg/dl', to: 'umol/l', fromLabel: 'mg/dL', toLabel: 'µmol/L', factor: 88.4 },
+    { id: 'dheas', when: /dhea[^a-z0-9]*s|dehydroepiandrosterone sulfate/, from: 'ug/dl', to: 'umol/l', fromLabel: 'µg/dL', toLabel: 'µmol/L', factor: .027 },
+    { id: 'estradiol', when: /estradiol/, from: 'pg/ml', to: 'pmol/l', fromLabel: 'pg/mL', toLabel: 'pmol/L', factor: 3.671 },
+    { id: 'free-t4', when: /free (?:t4|thyroxine)|(?:t4|thyroxine).*free/, from: 'ng/dl', to: 'pmol/l', fromLabel: 'ng/dL', toLabel: 'pmol/L', factor: 12.87 },
+    { id: 'total-t4', when: /(?:total )?(?:t4|thyroxine)/, exclude: /free/, from: 'ug/dl', to: 'nmol/l', fromLabel: 'µg/dL', toLabel: 'nmol/L', factor: 12.87 },
+    { id: 'free-t3', when: /free (?:t3|triiodothyronine)|(?:t3|triiodothyronine).*free/, from: 'pg/ml', to: 'pmol/l', fromLabel: 'pg/mL', toLabel: 'pmol/L', factor: 1.54 },
+    { id: 'total-t3', when: /(?:total )?(?:t3|triiodothyronine)/, exclude: /free/, from: 'ng/dl', to: 'nmol/l', fromLabel: 'ng/dL', toLabel: 'nmol/L', factor: .0154 },
+    { id: 'glucose', when: /glucose/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .05551 },
+    { id: 'insulin', when: /insulin/, from: 'uiu/ml', to: 'pmol/l', fromLabel: 'µIU/mL', toLabel: 'pmol/L', factor: 6.95 },
+    { id: 'iron', when: /\biron\b|tibc|uibc|iron.binding/, from: 'ug/dl', to: 'umol/l', fromLabel: 'µg/dL', toLabel: 'µmol/L', factor: .179 },
+    { id: 'lactate', when: /lactate|lactic acid/, exclude: /dehydrogenase/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .111 },
+    { id: 'magnesium', when: /magnesium/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .4114 },
+    { id: 'phosphate', when: /phosphate|phosphorus/, exclude: /phosphatase/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .3229 },
+    { id: 'progesterone', when: /progesterone/, from: 'ng/ml', to: 'nmol/l', fromLabel: 'ng/mL', toLabel: 'nmol/L', factor: 3.18 },
+    { id: 'testosterone-total', when: /testosterone/, exclude: /\bfree\b/, from: 'ng/dl', to: 'nmol/l', fromLabel: 'ng/dL', toLabel: 'nmol/L', factor: .0347 },
+    { id: 'triglycerides', when: /triglyceride/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .0113 },
+    { id: 'urate', when: /uric acid|\burate\b/, from: 'mg/dl', to: 'umol/l', fromLabel: 'mg/dL', toLabel: 'µmol/L', factor: 59.48 },
+    { id: 'urea-nitrogen', when: /blood urea nitrogen|\bbun\b|urea nitrogen/, from: 'mg/dl', to: 'mmol/l', fromLabel: 'mg/dL', toLabel: 'mmol/L', factor: .357 },
+    { id: 'vitamin-b12', when: /vitamin b12|cobalamin|\bb12\b/, from: 'pg/ml', to: 'pmol/l', fromLabel: 'pg/mL', toLabel: 'pmol/L', factor: .738 },
+    { id: 'protein-mass', when: /albumin|protein|globulin|haemoglobin|hemoglobin/, from: 'g/dl', to: 'g/l', fromLabel: 'g/dL', toLabel: 'g/L', factor: 10 },
+    { id: 'mass-g-dl', from: 'g/dl', to: 'g/l', fromLabel: 'g/dL', toLabel: 'g/L', factor: 10 },
+    { id: 'mass-mg-dl', from: 'mg/dl', to: 'mg/l', fromLabel: 'mg/dL', toLabel: 'mg/L', factor: 10 },
+    { id: 'mass-ug-dl', from: 'ug/dl', to: 'mg/l', fromLabel: 'µg/dL', toLabel: 'mg/L', factor: .01 },
+    { id: 'mass-ng-dl', from: 'ng/dl', to: 'ug/l', fromLabel: 'ng/dL', toLabel: 'µg/L', factor: .01 },
+    { id: 'mass-ng-ml', from: 'ng/ml', to: 'ug/l', fromLabel: 'ng/mL', toLabel: 'µg/L', factor: 1 },
+    { id: 'mass-pg-ml', from: 'pg/ml', to: 'ng/l', fromLabel: 'pg/mL', toLabel: 'ng/L', factor: 1 },
+    { id: 'mass-ug-ml', from: 'ug/ml', to: 'mg/l', fromLabel: 'µg/mL', toLabel: 'mg/L', factor: 1 },
+    { id: 'mass-mg-ml', from: 'mg/ml', to: 'g/l', fromLabel: 'mg/mL', toLabel: 'g/L', factor: 1 },
+  ];
+  AL.UNIT_RULES = UNIT_RULES;
+  const NUM = '(-?\\d{1,3}(?:[ ,\\u2009\\u202f]\\d{3})+(?:\\.\\d+)?|-?\\d+(?:\\.\\d+)?)';
+  const UNIT_TOKEN_RE = new RegExp('([<>≤≥]=?\\s*)?' + NUM + '(?:\\s*(?:-|–|—|to)\\s*([<>≤≥]=?\\s*)?' + NUM + ')?\\s*' + /(mmol\s*\/\s*mol|(?:m|n|p|u|µ|μ|mc)?mol\s*\/\s*(?:l|L)|(?:m|n|p|u|µ|μ|mc)?g\s*\/\s*(?:dl|dL|ml|mL|l|L)|(?:m|u|µ|μ|mc)?(?:iu|IU)\s*\/\s*(?:ml|mL|l|L))/.source, 'gi');
+  const unitNorm = v => String(v || '').toLowerCase().replace(/[µμ]/g, 'u').replace(/mc(?=g|iu)/g, 'u').replace(/\s+/g, '');
+  const num = v => Number(String(v || '').replace(/[,\s\u2009\u202f]/g, ''));
+  function fmt(v) { if (!Number.isFinite(v)) return ''; const r = Number(v.toPrecision(3)); return String(Object.is(r, -0) ? 0 : r); }
+  function ruleFor(context, unit, near) {
+    const c = String(context || '').toLowerCase(), n = String(near || '').toLowerCase();
+    return UNIT_RULES.find(r => (unit === r.from || unit === r.to) && (!r.when || r.when.test(c)) && !(r.exclude && r.exclude.test(c + ' ' + n)) && (!r.near || r.near.test(n))) || null;
+  }
+  function conv(v, r, rev) { return rev ? v / r.factor : v * r.factor; }
+  // Splits text into parts: {t} plain, {t, si} a calculated counterpart to show beside the source value.
+  function unitParts(value, context) {
+    const text = String(value == null ? '' : value), parts = [];
+    let last = 0, m;
+    UNIT_TOKEN_RE.lastIndex = 0;
+    while ((m = UNIT_TOKEN_RE.exec(text))) {
+      const unit = unitNorm(m[5]);
+      const near = text.slice(Math.max(0, m.index - 75), Math.min(text.length, m.index + m[0].length + 75));
+      const rule = ruleFor(context, unit, near);
+      parts.push({ t: text.slice(last, m.index + m[0].length) });
+      if (rule) {
+        const rev = unit === rule.to, target = rev ? rule.from : rule.to, label = rev ? rule.fromLabel : rule.toLabel;
+        const around = unitNorm(text.slice(Math.max(0, m.index - 90), Math.min(text.length, m.index + m[0].length + 90)));
+        const molarNear = /mol\/l/.test(around);
+        if (rule.factor === 1) {
+          // Same number in the other unit (ng/mL = µg/L): name the unit only, and only if no SI value is given anyway.
+          if (!around.includes(target) && !molarNear) parts.push({ t: '= ' + label, si: true });
+        } else if (!around.includes(target)) {
+          const f = x => fmt(conv(num(x), rule, rev));
+          const a = (m[1] || '').trim() + f(m[2]);
+          const b = m[4] != null && m[4] !== '' ? '–' + (m[3] || '').trim() + f(m[4]) : '';
+          if (a) parts.push({ t: '≈ ' + a + b + ' ' + label, si: true });
+        }
+      }
+      last = m.index + m[0].length;
+    }
+    parts.push({ t: text.slice(last) });
+    return parts.filter(p => p.t);
+  }
+  AL.unitParts = unitParts;
+
+  /* ---------- bytes ---------- */
+  AL.mb = n => (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + ' MB';
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = AL;
+  else root.AL = AL;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* ============ Assays app ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+/* Every piece of text goes into the page as a text node, never as HTML. */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'text') el.textContent = v;
+    else if (k === 'icon') el.insertAdjacentHTML('afterbegin', ICON[v] || '');
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+    else if (k === 'dataset') Object.assign(el.dataset, v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid == null || kid === false) continue;
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+const svgI = d => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${d}<\/svg>`;
+const ICON = {
+  search: svgI('<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>'),
+  gear: svgI('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  help: svgI('<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.9.6c0 1.7-2.5 2.1-2.5 3.6M12 16.6v.1"/>'),
+  close: svgI('<path d="M6 6l12 12M18 6 6 18"/>'),
+  copy: svgI('<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>'),
+  doc: svgI('<path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5M9.5 12.5h6M9.5 16h6"/>'),
+  ext: svgI('<path d="M13.5 4.5h6v6M19.5 4.5l-8 8"/><path d="M17 13.5v5a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 4 18.5v-10A1.5 1.5 0 0 1 5.5 7h5"/>'),
+  pin: svgI('<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>'),
+  back: svgI('<path d="M15 5l-7 7 7 7"/>'),
+  download: svgI('<path d="M12 4.5v11M7 11l5 5 5-5M5 19.5h14"/>'),
+  drive: svgI('<path d="M8.6 4h6.8l6 10.4-3.4 5.6H6l-3.4-5.6z"/><path d="M8.6 4 15 15M15.4 4 9 15M3 14.6h18"/>'),
+};
+const TOUCH = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+const fmtDate = s => { const t = Date.parse(s); return t ? new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
+const plural = (n, w, pl) => `${n.toLocaleString('en-GB')} ${n === 1 ? w : (pl || w + 's')}`;
+function ago(ms) {
+  if (!ms) return 'never';
+  const s = Math.round((Date.now() - ms) / 1000);
+  if (s < 45) return 'just now';
+  if (s < 3600) return Math.round(s / 60) + ' min ago';
+  if (s < 86400) return Math.round(s / 3600) + ' h ago';
+  return fmtDate(new Date(ms).toISOString());
+}
+
+/* ---------- storage: IndexedDB key-value store ---------- */
+const DB_NAME = 'assays-app', DB_STORE = 'kv';
+const Store = {
+  db: null, mode: 'idb',
+  async open() {
+    try {
+      if (!('indexedDB' in window)) throw new Error('no idb');
+      this.db = await new Promise((res, rej) => {
+        const r = indexedDB.open(DB_NAME, 1);
+        r.onupgradeneeded = () => r.result.createObjectStore(DB_STORE);
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+        r.onblocked = () => rej(new Error('blocked'));
+      });
+    } catch (e) { this.mode = 'mem'; this.mem = new Map(); }
+  },
+  _tx(mode, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction(DB_STORE, mode), st = t.objectStore(DB_STORE);
+      let out; const r = fn(st);
+      if (r) r.onsuccess = () => { out = r.result; };
+      t.oncomplete = () => res(out);
+      t.onerror = t.onabort = () => rej(t.error || new Error('transaction failed'));
+    });
+  },
+  async get(k) { if (this.mode === 'mem') return this.mem.get(k); return this._tx('readonly', st => st.get(k)); },
+  async put(obj) {
+    if (this.mode === 'mem') { for (const [k, v] of Object.entries(obj)) this.mem.set(k, v); return; }
+    return this._tx('readwrite', st => { let last; for (const [k, v] of Object.entries(obj)) last = st.put(v, k); return last; });
+  },
+  async del(k) { if (this.mode === 'mem') { this.mem.delete(k); return; } return this._tx('readwrite', st => st.delete(k)); },
+  async keys() { if (this.mode === 'mem') return [...this.mem.keys()]; return this._tx('readonly', st => st.getAllKeys()); },
+};
+const LS_UI = 'assays.ui.v1';   // this browser only
+
+/* ---------- state ---------- */
+const App = {
+  booted: false, owner: false, tab: Math.random().toString(36).slice(2),
+  ix: null, lib: null,            // search index and library meta
+  files: [], filesAt: 0, folderUrl: '', folderFound: true,
+  sgh: null,                       // { fetched, tests: [{n,u,c,s}] }
+  user: new Map(),                 // u:<docId> -> { id, doc, pin, note, updated_at }
+  sync: { url: '', key: '', device: '', base: {}, baseData: {}, dirty: {}, purge: {}, lastSync: 0, server: null },
+  ui: { sel: '', recent: [], filter: 'all', si: true },
+  q: '', names: [], text: null, rows: [], active: -1,
+  pdfs: {},                        // fileId -> { modified, size, at } kept in this browser
+  libErr: '', libBusy: false,
+};
+const fileByName = () => { const m = new Map(); for (const f of App.files) m.set(f.name.normalize('NFC'), f); return m; };
+let FILES = new Map();
+const fileFor = d => d && d.file ? FILES.get(String(d.file).normalize('NFC')) || null : null;
+const userRec = docId => App.user.get(AL.userId(docId)) || null;
+const pinned = () => new Set([...App.user.values()].filter(r => r.pin).map(r => r.doc));
+const docById = id => App.ix && App.ix.byId.get(id) || null;
+function extras() {   // PDFs in the Drive folder that the library doesn't cover yet
+  if (!App.ix) return [];
+  const known = new Set(App.ix.docs.map(d => String(d.file).normalize('NFC')));
+  return App.files.filter(f => !known.has(f.name.normalize('NFC'))).map(f => ({
+    id: 'file:' + f.id, extra: true, name: f.name.replace(/\.pdf$/i, '').replace(/\s+—\s+Alinity.*$/, ''), title: f.name, file: f.name, pc: /alinity c/i.test(f.name) ? 'c' : /alinity i/i.test(f.name) ? 'i' : '', cards: [], pages: [], aliases: [],
+  }));
+}
+const anyDoc = id => docById(id) || extras().find(d => d.id === id) || null;
+
+function loadUI() { try { Object.assign(App.ui, JSON.parse(localStorage.getItem(LS_UI) || '{}')); } catch (e) { } }
+function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify(App.ui)); } catch (e) { } }
+
+let saving = null, savePending = false;
+function saveSoon() { if (savePending) return; savePending = true; Promise.resolve().then(() => { savePending = false; saveNow(); }); }
+async function saveNow() {
+  const run = async () => {
+    try { await Store.put({ state: { v: 1, user: [...App.user.values()], sync: App.sync, pdfs: App.pdfs } }); App.saveOK = true; }
+    catch (e) { App.saveOK = false; }
+  };
+  saving = (saving || Promise.resolve()).then(run);
+  return saving;
+}
+async function flush() { if (savePending) await saveNow(); else if (saving) await saving; }
+
+/* ---------- pins and notes ---------- */
+function putUser(docId, patch) {
+  const id = AL.userId(docId), cur = App.user.get(id) || { id, kind: 'user', doc: docId };
+  const next = Object.assign({}, cur, patch, { updated_at: new Date().toISOString() });
+  if (!next.note) delete next.note;
+  if (!next.pin) delete next.pin;
+  App.user.set(id, next);
+  App.sync.dirty[id] = 1; delete App.sync.purge[id];
+  saveSoon(); syncSoon(2500);
+}
+function togglePin(d) {
+  if (!d || d.extra) return;
+  const on = !(userRec(d.id) || {}).pin;
+  putUser(d.id, { pin: on });
+  toast(on ? `${d.name} pinned to the top of the list.` : `${d.name} unpinned.`);
+  render();
+}
+
+/* ---------- Drive: one script serves the library, the PDFs and the sync ---------- */
+const Sync = { busy: false, again: false, timer: 0, err: null, detail: '', fails: 0 };
+const syncReady = () => !!(App.sync.url && App.sync.key);
+const pendingCount = () => Object.keys(App.sync.dirty).length + Object.keys(App.sync.purge).length;
+const validScriptUrl = url => /^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$/.test(url) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(url);
+function syncSoon(ms) { clearTimeout(Sync.timer); if (syncReady()) Sync.timer = setTimeout(() => syncNow(false), ms); }
+async function call(body, opts = {}) {
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const t = setTimeout(() => ctl && ctl.abort(), opts.ms || 45000);
+  try {
+    const res = await fetch(opts.url || App.sync.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ key: opts.key || App.sync.key }, body)), redirect: 'follow', signal: ctl ? ctl.signal : undefined });
+    let out;
+    try { out = await res.json(); } catch (e) { throw Object.assign(new Error('not_json'), { code: 'not_json' }); }
+    if (!out || !out.ok) throw Object.assign(new Error((out && out.error) || 'server'), { code: (out && out.error) || 'server', detail: out && out.detail });
+    return out;
+  } catch (e) {
+    if (!e.code) e.code = e.name === 'AbortError' ? 'timeout' : 'network';
+    throw e;
+  } finally { clearTimeout(t); }
+}
+function errText(code, detail) {
+  return {
+    bad_key: 'The key in this browser doesn’t match your Assays script. Open the setup link again',
+    not_json: 'The link didn’t answer like the Assays script. Check it was deployed as a Web app with access for “Anyone”',
+    timeout: 'Google took too long to answer', network: 'Couldn’t reach Google', offline: 'You’re offline',
+    busy: 'Another PC was saving at the same moment; will retry',
+    corrupt_store: 'The pins-and-notes file in Drive can’t be read. Nothing was overwritten',
+    corrupt_library: 'The library file in Drive can’t be read',
+    no_ifu_folder: 'The IFU folder wasn’t found in Drive (OneDrive Import › 1. Lab › Admin › IFU › Abbott Alinity)',
+    not_an_ifu: 'That file isn’t in the IFU folder', not_found: 'That PDF is no longer in Drive', too_big: 'That PDF is too large to fetch',
+  }[code] || ('Google said: ' + code + (detail ? ' (' + detail + ')' : ''));
+}
+
+async function syncNow(manual) {
+  const S = App.sync;
+  if (!syncReady()) { updatePill(); return; }
+  if (Sync.busy) { Sync.again = true; return; }
+  if (navigator.onLine === false) { Sync.err = 'offline'; updatePill(); return; }
+  Sync.busy = true; updatePill();
+  const sent = new Map(), changes = [];
+  let changed = 0;
+  try {
+    for (const id of Object.keys(S.dirty)) {
+      const r = App.user.get(id);
+      if (!r) { delete S.dirty[id]; continue; }
+      sent.set(id, JSON.stringify(r));
+      changes.push({ id, baseRev: S.base[id] === undefined ? null : S.base[id], data: r });
+    }
+    const out = await call({ op: 'sync', v: 1, device: S.device, changes, have: Object.assign({}, S.base) });
+    for (const a of out.accepted || []) {
+      if (!sent.has(a.id)) continue;
+      S.base[a.id] = a.rev; S.baseData[a.id] = JSON.parse(sent.get(a.id));
+      const r = App.user.get(a.id);
+      if (r && JSON.stringify(r) === sent.get(a.id)) delete S.dirty[a.id];
+    }
+    for (const c of [...(out.conflicts || []), ...(out.updates || [])]) changed += reconcile(c);
+    S.server = { count: out.count, savedAt: out.savedAt, savedBy: out.savedBy, lastBackupAt: out.lastBackupAt };
+    Sync.err = null; Sync.detail = ''; Sync.fails = 0; S.lastSync = Date.now();
+  } catch (e) {
+    Sync.err = (e && e.code) || 'network'; Sync.detail = (e && e.detail) || ''; Sync.fails++;
+  } finally {
+    Sync.busy = false;
+    await saveNow();
+    if (changed) render(); else updatePill();
+    if (manual) toast(Sync.err ? 'Couldn’t sync: ' + errText(Sync.err, Sync.detail) + '.' : 'Pins and notes are up to date.');
+    if (Sync.again) { Sync.again = false; syncSoon(400); }
+    else if (Sync.err === 'bad_key' || Sync.err === 'corrupt_store') { }
+    else if (pendingCount() && Sync.err) syncSoon(Math.min(300000, 15000 * Math.pow(2, Math.min(Sync.fails, 4))));
+    else if (pendingCount()) syncSoon(1200);
+  }
+}
+// Brings one record from Drive into this browser, merging with an unsent local change. Returns 1 if anything changed.
+function reconcile(u) {
+  const S = App.sync, id = u.id, local = App.user.get(id), dirty = !!S.dirty[id];
+  if (u.purged) {
+    if (dirty && local) { S.base[id] = u.rev; S.baseData[id] = null; return 0; }
+    const had = App.user.delete(id);
+    delete S.base[id]; delete S.baseData[id]; delete S.dirty[id];
+    return had ? 1 : 0;
+  }
+  if (!dirty || !local) { App.user.set(id, u.data); S.base[id] = u.rev; S.baseData[id] = u.data; return 1; }
+  const merged = AL.mergeUser(S.baseData[id], local, u.data);
+  S.base[id] = u.rev; S.baseData[id] = u.data;
+  App.user.set(id, merged);
+  if (AL.deepEq(merged, u.data)) delete S.dirty[id];
+  return 1;
+}
+
+/* ----- library ----- */
+async function refreshLibrary(manual) {
+  if (!syncReady() || App.libBusy) return;
+  if (navigator.onLine === false) { if (manual) toast('You’re offline. The library saved in this browser is still here.'); return; }
+  App.libBusy = true; App.libErr = '';
+  if (!App.ix) render();
+  try {
+    const out = await call({ op: 'library', have: App.lib && App.lib.version }, { ms: 90000 });
+    App.files = out.files || []; App.filesAt = Date.now(); App.folderUrl = out.folderUrl || ''; App.folderFound = out.folderFound !== false;
+    FILES = fileByName();
+    const save = { files: { list: App.files, at: App.filesAt, folderUrl: App.folderUrl, folderFound: App.folderFound } };
+    if (out.library && out.library.docs) {
+      save.lib = out.library;
+      setLibrary(out.library);
+      if (manual) toast(`Library updated: ${plural(out.library.docs.length, 'IFU')}.`);
+    } else if (out.missing) {
+      App.libErr = 'missing';
+    } else if (manual) toast('The library is up to date.');
+    await Store.put(save);
+  } catch (e) {
+    App.libErr = e.code || 'network';
+    if (manual || !App.ix) toast('Couldn’t load the library: ' + errText(App.libErr, e.detail) + '.', { ms: 9000 });
+  } finally {
+    App.libBusy = false;
+    render();
+  }
+}
+function setLibrary(lib) {
+  App.ix = AL.buildIndex(lib);
+  App.lib = { version: lib.version, built: lib.built, count: (lib.docs || []).length, source: lib.source };
+}
+async function refreshSgh(force) {
+  if (!syncReady() || navigator.onLine === false) return;
+  if (!force && App.sgh && App.sgh.fetched && Date.now() - Date.parse(App.sgh.fetched) < 7 * 86400000) return;
+  try {
+    const out = await call({ op: 'sgh', force: !!force }, { ms: 60000 });
+    if (out.sgh && Array.isArray(out.sgh.tests)) { App.sgh = out.sgh; await Store.put({ sgh: App.sgh }); render(); }
+  } catch (e) { /* the SGH button falls back to the directory's front page */ }
+}
+
+/* ----- PDFs: fetched once from Drive, then kept in this browser ----- */
+const blobUrls = new Map();
+async function pdfBlobUrl(f, onStage) {
+  if (blobUrls.has(f.id)) return blobUrls.get(f.id);
+  let rec = await Store.get('pdf:' + f.id);
+  if (rec && rec.modified !== f.modified) rec = null;
+  if (!rec) {
+    if (!syncReady()) throw Object.assign(new Error('nosync'), { code: 'nosync' });
+    if (navigator.onLine === false) throw Object.assign(new Error('offline'), { code: 'offline' });
+    if (onStage) onStage(`Fetching from Drive (${AL.mb(f.size || 0)})…`);
+    const out = await call({ op: 'pdf', fileId: f.id }, { ms: 120000 });
+    const bin = atob(out.b64), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    rec = { id: f.id, name: out.name, modified: out.modified, size: bytes.length, data: bytes.buffer };
+    try {
+      await Store.put({ ['pdf:' + f.id]: rec });
+      App.pdfs[f.id] = { modified: rec.modified, size: rec.size, at: Date.now(), name: rec.name };
+      saveSoon();
+    } catch (e) { /* keep going without a saved copy */ }
+  }
+  const url = URL.createObjectURL(new Blob([rec.data], { type: 'application/pdf' }));
+  blobUrls.set(f.id, url);
+  return url;
+}
+const cachedCount = () => App.files.filter(f => App.pdfs[f.id] && App.pdfs[f.id].modified === f.modified).length;
+const cachedBytes = () => Object.values(App.pdfs).reduce((s, p) => s + (p.size || 0), 0);
+
+/* ============ shell: toasts, dialogs, pill ============ */
+function toast(msg, o = {}) {
+  const box = $('#toasts'), t = h('div', { class: 'toast', role: 'status' }, h('span', { text: msg }));
+  if (o.action) t.append(h('button', { text: o.action.label, onclick: () => { o.action.fn(); t.remove(); } }));
+  box.replaceChildren(t);
+  setTimeout(() => t.remove(), o.ms || 6000);
+}
+function modal(o) {
+  const prevFocus = document.activeElement;
+  const scrim = h('div', { class: 'scrim' });
+  const close = () => { scrim.remove(); document.removeEventListener('keydown', onKey, true); if (o.onclose) o.onclose(); if (prevFocus && prevFocus.focus) prevFocus.focus(); };
+  const foot = (o.actions || []).length ? h('div', { class: 'mfoot' },
+    o.actions.map(a => h('button', { class: 'btn' + (a.primary ? ' primary' : '') + (a.danger ? ' danger' : ''), disabled: a.disabled,
+      onclick: async () => { if (!a.act) return close(); const r = await a.act(el); if (r !== false) close(); } }, a.label))) : null;
+  const el = h('div', { class: 'modal' + (o.wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': o.title },
+    h('div', { class: 'mhead' }, h('h2', { text: o.title }), h('button', { class: 'ib', 'aria-label': 'Close', icon: 'close', onclick: close })),
+    o.tabs || null, h('div', { class: 'mbody' }, o.body), foot);
+  scrim.append(el);
+  scrim.addEventListener('mousedown', e => { if (e.target === scrim) close(); });
+  function onKey(e) {
+    if (e.key === 'Escape') { e.stopPropagation(); close(); }
+    if (e.key === 'Tab') {
+      const f = $$('button,input,textarea,select,a[href],[tabindex]:not([tabindex="-1"])', el).filter(x => !x.disabled && x.offsetParent);
+      if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    }
+  }
+  document.addEventListener('keydown', onKey, true);
+  $('#modal-root').append(scrim);
+  setTimeout(() => { const f = $('[autofocus]', el) || $('.mfoot .primary', el); if (f) f.focus(); }, 20);
+  return { el, close };
+}
+function updatePill() {
+  const el = $('#sync-pill'); if (!el) return;
+  const n = pendingCount(), offline = navigator.onLine === false || Sync.err === 'offline';
+  let cls = '', txt = '', tip = '';
+  if (!syncReady()) { cls = 'local'; txt = 'Not connected'; tip = 'Open your Assays setup link to connect this browser to your IFU library'; }
+  else if (Sync.busy || App.libBusy) { cls = 'busy'; txt = App.libBusy ? 'Loading library…' : 'Syncing…'; }
+  else if (offline) { cls = 'off'; txt = 'Offline'; tip = 'The library and saved PDFs still work. Pins and notes sync when you’re back online'; }
+  else if (Sync.err || (App.libErr && App.libErr !== 'missing')) { cls = 'err'; txt = n ? `Not synced, ${n} waiting` : 'Drive problem'; tip = errText(Sync.err || App.libErr, Sync.detail); }
+  else if (n) { cls = 'busy'; txt = `${n} to sync`; }
+  else { txt = 'Synced ' + ago(App.sync.lastSync); tip = 'Library and PDFs from your Google Drive; pins and notes synced to Drive › 00_Apps › Assays'; }
+  el.className = 'pill ' + cls;
+  el.replaceChildren(h('i', { class: 'dot' }), h('span', { text: txt }));
+  el.title = (tip ? tip + '. ' : '') + 'Click for settings.';
+}
+
+/* ============ search ============ */
+let qTimer = 0;
+function setQuery(q, now) {
+  App.q = q;
+  clearTimeout(qTimer);
+  if (now) runQuery(); else qTimer = setTimeout(runQuery, 90);
+}
+function runQuery() {
+  const q = App.q.trim();
+  if (!App.ix || !q) { App.names = []; App.text = null; renderList(); return; }
+  App.names = AL.searchNames(App.ix, q, { pins: pinned() });
+  const ex = extras().filter(d => AL.squash(d.name).includes(AL.squash(q)));
+  App.names.push(...ex);
+  App.text = AL.squash(q).length >= 3 ? AL.searchText(App.ix, q) : null;
+  const first = App.names[0] || (App.text && App.text.groups[0] && App.text.groups[0].d);
+  if (first) select(first.id, { keepQuery: true, quiet: true });
+  else renderList();
+}
+function textGroupFor(docId) { return App.text && App.text.groups.find(g => g.d.id === docId) || null; }
+
+/* ============ render ============ */
+function render() {
+  if (!App.booted) return;
+  updatePill();
+  const main = $('#main');
+  if (!App.ix) { main.replaceChildren(welcome()); $('#q').disabled = true; return; }
+  $('#q').disabled = false;
+  $('#q').placeholder = `Search ${App.ix.docs.length} IFUs: name, abbreviation or any word inside`;
+  if (!$('#list', main)) main.replaceChildren(h('aside', { id: 'list', class: 'list', 'aria-label': 'Assays' }), h('section', { id: 'detail', class: 'detail' }), h('div', { id: 'pdf', class: 'pdf', hidden: true }));
+  if (App.q.trim() && !App.names.length && !App.text) runQuery();
+  renderList();
+  renderDetail();
+}
+
+function welcome() {
+  const busy = App.libBusy, err = App.libErr;
+  const box = h('div', { class: 'welcome' });
+  if (!syncReady()) {
+    box.append(h('h2', { text: 'Connect Assays to your IFU library' }),
+      h('p', { text: 'Your IFUs and their key numbers stay in your own Google Drive. This page reads them through your private Assays script, so it needs your setup link once on each PC.' }),
+      h('ol', { class: 'steps' },
+        h('li', {}, 'In Gmail on this PC, open the draft ', h('b', { text: 'Assays and Utilities setup links' }), '.'),
+        h('li', { text: 'Click the Assays setup link. Assays opens and asks to connect.' }),
+        h('li', { text: 'Bookmark this page (Ctrl+D).' })),
+      h('details', { class: 'paste' }, h('summary', { text: 'Or paste the setup link here' }),
+        h('form', { class: 'row', onsubmit: e => { e.preventDefault(); const v = e.target.link.value.trim(); const m = /#sync=([A-Za-z0-9_-]+)/.exec(v); if (!m) { toast('That isn’t an Assays setup link.'); return; } location.hash = 'sync=' + m[1]; } },
+          h('input', { name: 'link', class: 'field', placeholder: 'https://3dfung-ai.github.io/assays/#sync=…', 'aria-label': 'Setup link', autocomplete: 'off' }),
+          h('button', { class: 'btn primary', type: 'submit', text: 'Connect' }))));
+  } else if (busy) {
+    box.append(h('h2', { text: 'Loading your IFU library…' }), h('p', { text: 'About 3.6 MB from your Google Drive. This happens once; after that Assays opens instantly, even offline.' }), h('div', { class: 'bar' }, h('i')));
+  } else if (err === 'missing') {
+    box.append(h('h2', { text: 'The library file isn’t in Drive yet' }), h('p', { text: 'Your Assays script is connected, but My Drive › 00_Apps › Assays has no assays-library.json. Put it there, then try again.' }),
+      h('button', { class: 'btn primary', text: 'Try again', onclick: () => refreshLibrary(true) }));
+  } else {
+    box.append(h('h2', { text: 'Couldn’t load the library' }), h('p', { text: errText(err || 'network') + '.' }),
+      h('button', { class: 'btn primary', text: 'Try again', onclick: () => refreshLibrary(true) }));
+  }
+  return box;
+}
+
+/* ----- the list ----- */
+function rowEl(d, opts = {}) {
+  const active = d.id === App.ui.sel;
+  const pin = !d.extra && (userRec(d.id) || {}).pin;
+  const r = h('button', { class: 'row' + (active ? ' on' : '') + (d.extra ? ' extra' : ''), role: 'option', 'aria-selected': active ? 'true' : 'false', dataset: { id: d.id },
+    onclick: () => { select(d.id, { keepQuery: true }); if (narrow()) document.body.classList.add('show-detail'); } },
+    h('span', { class: 'pc pc-' + (d.pc || 'x'), title: d.pc === 'c' ? 'Alinity c (chemistry)' : d.pc === 'i' ? 'Alinity i (immunoassay)' : 'Alinity', text: d.pc || '·' }),
+    h('span', { class: 'nm' }, d.name, d.sigma ? h('span', { class: 'sig', title: 'Sigma-standardised version', text: 'Σ' }) : null),
+    opts.sub ? h('span', { class: 'sub', text: opts.sub }) : pin && !opts.inPins ? h('span', { class: 'star', icon: 'pin', title: 'Pinned' }) : null);
+  App.rows.push(d.id);
+  return r;
+}
+function group(title, kids, opts = {}) {
+  if (!kids.length) return null;
+  return h('div', { class: 'grp' }, h('div', { class: 'gh' }, h('span', { text: title }), opts.count != null ? h('span', { class: 'n', text: String(opts.count) }) : null), ...kids);
+}
+function renderList() {
+  const box = $('#list'); if (!box || !App.ix) return;
+  App.rows = [];
+  const q = App.q.trim(), out = [];
+  const flt = d => App.ui.filter === 'all' || d.pc === App.ui.filter;
+  if (!q) {
+    const all = App.ix.docs.filter(flt), pins = pinned();
+    const nc = App.ix.docs.filter(d => d.pc === 'c').length, ni = App.ix.docs.filter(d => d.pc === 'i').length;
+    out.push(h('div', { class: 'filters', role: 'radiogroup', 'aria-label': 'Analyser' },
+      [['all', 'All', App.ix.docs.length], ['c', 'Alinity c', nc], ['i', 'Alinity i', ni]].map(([k, label, n]) =>
+        h('button', { class: 'chip' + (App.ui.filter === k ? ' on' : ''), role: 'radio', 'aria-checked': App.ui.filter === k ? 'true' : 'false', onclick: () => { App.ui.filter = k; saveUI(); renderList(); } }, label, h('span', { class: 'n', text: String(n) })))));
+    out.push(group('Pinned', all.filter(d => pins.has(d.id)).map(d => rowEl(d, { inPins: true }))));
+    const rec = App.ui.recent.map(docById).filter(d => d && flt(d) && !pins.has(d.id)).slice(0, 5);
+    out.push(group('Recent', rec.map(d => rowEl(d))));
+    out.push(group('All assays', all.slice().sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' })).map(d => rowEl(d)), { count: all.length }));
+    const ex = extras().filter(flt);
+    out.push(group('Not indexed yet', ex.map(d => rowEl(d, { sub: 'PDF only' }))));
+  } else {
+    out.push(group('Assays', App.names.map(d => rowEl(d)), { count: App.names.length }));
+    const t = App.text;
+    const named = new Set(App.names.map(d => d.id));
+    const inside = t ? t.groups.filter(g => !named.has(g.d.id)) : [];
+    if (inside.length) out.push(group(App.names.length ? 'Also mentioned in' : 'Inside the IFUs', inside.slice(0, 40).map(g => rowEl(g.d, { sub: plural(g.hits.length, 'page') })), { count: inside.length }));
+    if (!App.names.length && !inside.length) out.push(h('p', { class: 'none' }, 'No IFU matches ', h('b', { text: `“${q}”` }), '.'));
+    out.push(h('div', { class: 'grp outside' }, h('div', { class: 'gh' }, h('span', { text: 'Look it up elsewhere' })),
+      h('a', { class: 'row link', href: AL.mayoUrl(q), target: '_blank', rel: 'noopener noreferrer' }, h('span', { class: 'pc pc-x', icon: 'ext' }), h('span', { class: 'nm' }, 'Mayo Clinic Labs: ', h('b', { text: q }))),
+      h('a', { class: 'row link', href: sghDirectLink(q) || AL.SGH_CATALOGUE, target: '_blank', rel: 'noopener noreferrer', onclick: () => { if (!sghDirectLink(q)) copyQuiet(q); } }, h('span', { class: 'pc pc-x', icon: 'ext' }), h('span', { class: 'nm' }, 'SGH test directory', sghDirectLink(q) ? '' : ' (search there)'))));
+  }
+  box.replaceChildren(...out.filter(Boolean));
+  box.setAttribute('role', 'listbox');
+  App.active = App.rows.indexOf(App.ui.sel);
+  const on = $('.row.on', box);
+  if (on && !App.listScrolled) on.scrollIntoView({ block: 'nearest' });
+  App.listScrolled = false;
+}
+function sghDirectLink(term) {
+  if (!App.sgh || !App.sgh.tests) return '';
+  const t = AL.sghMatch(App.sgh.tests, term);
+  return t ? t.u : '';
+}
+async function copyQuiet(text) { try { await navigator.clipboard.writeText(text); toast(`Copied “${text}”. Paste it into the SGH search box.`); } catch (e) { } }
+
+function select(id, o = {}) {
+  if (!anyDoc(id)) return;
+  if (App.ui.sel !== id) { App.ui.sel = id; saveUI(); }
+  if (!o.quiet) pushRecent(id);
+  closePdf(true);
+  renderList();
+  renderDetail();
+}
+function pushRecent(id) {
+  if (!docById(id)) return;
+  App.ui.recent = [id, ...App.ui.recent.filter(x => x !== id)].slice(0, 12);
+  saveUI();
+}
+function moveSel(n) {
+  if (!App.rows.length) return;
+  let i = App.rows.indexOf(App.ui.sel);
+  i = i < 0 ? 0 : Math.max(0, Math.min(App.rows.length - 1, i + n));
+  select(App.rows[i], { keepQuery: true, quiet: true });
+}
+
+/* ----- the detail ----- */
+function renderDetail() {
+  const box = $('#detail'); if (!box || !App.ix) return;
+  const d = anyDoc(App.ui.sel);
+  const same = App.detailFor === (d && d.id) && App.detailQ === App.q;
+  const ae = document.activeElement;
+  if (same && ae && ae.tagName === 'TEXTAREA' && box.contains(ae)) return;   // don't pull a note out from under the cursor
+  const keep = same ? box.scrollTop : 0;
+  App.detailFor = d && d.id; App.detailQ = App.q;
+  if (!d) { box.replaceChildren(h('div', { class: 'blank' }, h('p', { text: 'Type an assay, an abbreviation such as ALT or hCG, or any word inside an IFU such as biotin.' }), h('p', { class: 'hint' }, 'Press ', h('kbd', { text: '/' }), ' to search from anywhere, ', h('kbd', { text: '↑' }), h('kbd', { text: '↓' }), ' to move, ', h('kbd', { text: 'Enter' }), ' to open the IFU.'))); return; }
+  const f = fileFor(d), u = userRec(d.id) || {};
+  const tg = textGroupFor(d.id), viaText = tg && !App.names.some(x => x.id === d.id);
+  const meta = [d.platform || (d.pc ? 'Alinity ' + d.pc : ''), methodShort(d), d.revision, d.docref, d.pages_n ? plural(d.pages_n, 'page') : ''].filter(Boolean);
+  const head = h('header', { class: 'dh' },
+    narrow() ? h('button', { class: 'ib back', 'aria-label': 'Back to the list', icon: 'back', onclick: () => document.body.classList.remove('show-detail') }) : null,
+    h('div', { class: 'titles' },
+      h('h1', {}, d.name, d.sigma ? h('span', { class: 'tag', title: 'Sigma-standardised version of this assay', text: 'Sigma' }) : null),
+      h('p', { class: 'meta', text: meta.join('  ·  ') })),
+    h('div', { class: 'acts' },
+      h('button', { class: 'btn primary', icon: 'doc', disabled: !f, title: f ? 'Open the IFU (Enter)' : 'This PDF isn’t in the Drive IFU folder', onclick: e => openPdf(d, tg && viaText ? tg.hits[0].page : 1, e) }, 'Open IFU', TOUCH ? null : h('kbd', { text: '⏎' })),
+      d.extra ? null : h('a', { class: 'btn', href: AL.mayoUrl(d.mayo || d.name), target: '_blank', rel: 'noopener noreferrer', title: `Search Mayo Clinic Labs for “${d.mayo || d.name}” (M)` }, 'Mayo', h('span', { icon: 'ext' })),
+      d.extra ? null : sghButton(d),
+      d.extra ? null : h('button', { class: 'ib pinb' + (u.pin ? ' on' : ''), 'aria-pressed': u.pin ? 'true' : 'false', 'aria-label': u.pin ? 'Unpin (P)' : 'Pin to the top of the list (P)', title: u.pin ? 'Unpin (P)' : 'Pin (P)', icon: 'pin', onclick: () => togglePin(d) })));
+  const body = [];
+  if (d.extra) {
+    body.push(h('div', { class: 'note-box' }, h('p', { text: 'This PDF was added to the IFU folder after the library was built, so its key numbers and text aren’t searchable yet. You can still open it.' }),
+      h('p', { class: 'hint', text: 'To add it, ask Claude to rebuild the Assays library.' })));
+  } else {
+    if (tg && viaText) body.push(matchesBlock(d, tg));
+    body.push(keyNumbers(d));
+    body.push(noteBlock(d, u));
+  }
+  box.replaceChildren(head, h('div', { class: 'dbody' }, ...body));
+  box.scrollTop = keep;
+}
+function methodShort(d) {
+  const c = (d.cards || []).find(c => c.key === 'method');
+  const t = c && c.text || '';
+  return /\bCMIA\b/.test(t) ? 'CMIA' : '';
+}
+function sghTarget(d) {
+  const term = d.sgh || d.name;
+  const t = App.sgh && App.sgh.tests ? AL.sghMatch(App.sgh.tests, term) : null;
+  return t ? { url: t.u, title: `SGH test directory: ${t.n} (S)` } : { url: AL.SGH_CATALOGUE, copy: term, title: `SGH test directory. “${term}” is copied so you can paste it into its search (S)` };
+}
+function sghButton(d) {
+  const t = sghTarget(d);
+  return h('a', { class: 'btn', href: t.url, target: '_blank', rel: 'noopener noreferrer', title: t.title, onclick: () => { if (t.copy) copyQuiet(t.copy); } }, 'SGH', h('span', { icon: 'ext' }));
+}
+function pageChip(d, page, label, cls) {
+  if (!page) return null;
+  return h('button', { class: 'pg' + (cls ? ' ' + cls : ''), title: `Open the IFU at page ${page}`, onclick: e => openPdf(d, page, e) }, label || 'p. ' + page);
+}
+function partsEl(text, context, tag = 'span') {
+  const el = h(tag);
+  const parts = App.ui.si ? AL.unitParts(text, context) : [{ t: text }];
+  for (const p of parts) el.append(p.si ? h('span', { class: 'si', title: 'Calculated conversion; the IFU value is shown first', text: p.t }) : document.createTextNode(p.t));
+  return el;
+}
+function matchesBlock(d, g) {
+  const terms = App.text.terms;
+  const rows = g.hits.slice(0, 12).map(hit => h('button', { class: 'hit', onclick: e => openPdf(d, hit.page, e) },
+    h('span', { class: 'pg', text: 'p. ' + hit.page }),
+    h('span', { class: 'snip' }, AL.snippet(d.pages[hit.page - 1], terms).map(p => p.m ? h('mark', { text: p.t }) : p.t))));
+  return h('section', { class: 'matches' }, h('h2', {}, 'Matches for ', h('b', { text: `“${App.q.trim()}”` }), h('span', { class: 'n', text: plural(g.hits.length, 'page') })), ...rows,
+    g.hits.length > 12 ? h('p', { class: 'hint', text: `${g.hits.length - 12} more pages match. Open the IFU and use Ctrl+F.` }) : null);
+}
+function card(d, key) { return (d.cards || []).find(c => c.key === key) || null; }
+function check(d, c) {
+  if (!c) return null;
+  if (c.conf === 'check_source') return pageChip(d, c.page, 'Check p. ' + c.page, 'warn');
+  return pageChip(d, c.page);
+}
+function keyNumbers(d) {
+  const ctx = (d.name + ' ' + (d.official || '')).toLowerCase();
+  const rep = card(d, 'reportable'), lim = card(d, 'limits'), pre = card(d, 'precision'), spe = card(d, 'specimen'), sto = card(d, 'storage'), exp = card(d, 'expected'), met = card(d, 'method'), lin = card(d, 'linearity');
+  const fallback = rep && /fallback/i.test(rep.source_label || '');
+  const top = h('div', { class: 'hero' },
+    h('div', { class: 'cell big' },
+      h('div', { class: 'lab' }, h('span', { text: fallback ? 'Measuring interval' : 'Reportable interval' }), check(d, rep)),
+      rep && rep.text ? partsEl(rep.text.replace(/\.$/, ''), ctx, 'div') : h('div', { class: 'none', text: 'Not found automatically' }),
+      fallback ? h('p', { class: 'fine', text: 'Analytical measuring interval. The IFU may give a wider reportable range with dilution.' }) : null),
+    h('div', { class: 'cell' },
+      h('div', { class: 'lab' }, h('span', { text: 'Limits of detection and quantitation' }), check(d, lim)),
+      lim && lim.text ? (lim.lines && lim.lines.length > 1 ? h('div', {}, lim.lines.map(l => partsEl(l, ctx, 'div'))) : partsEl(lim.text, ctx, 'div')) : h('div', { class: 'none', text: 'Not found automatically' })),
+    exp ? h('button', { class: 'cell ref', disabled: !exp.page, onclick: e => openPdf(d, exp.page, e), title: exp.page ? `Open the IFU at page ${exp.page}` : '' },
+      h('div', { class: 'lab' }, h('span', { text: 'Expected values' }), exp.page ? h('span', { class: 'pg', text: 'p. ' + exp.page }) : null),
+      h('div', { class: 'go', text: exp.page ? `Reference intervals are a table in the IFU. Open page ${exp.page}` : 'Not found automatically' })) : null);
+  const cards = [];
+  if (pre) cards.push(box('Precision', check(d, pre), pre.table && pre.table.length ? precisionTable(pre, ctx) : pre.text ? h('p', { class: 'prose', text: clip(pre.text, 260) }) : null));
+  if (spe) cards.push(box('Specimens', check(d, spe), specimenBody(spe)));
+  if (sto) cards.push(box('Storage', check(d, sto), h('div', {}, splitDots(sto.text).map(l => h('div', { class: 'ln', text: l }))), sto.caveat ? h('p', { class: 'fine', text: clip(sto.caveat, 220) }) : null));
+  if (met) cards.push(box('Method', check(d, met), met.text ? h('p', { class: 'prose', text: clip(met.text, 300) }) : null));
+  if (lin && lin.text && !(rep && rep.text && sameRange(lin.text, rep.text))) cards.push(box('Linearity', check(d, lin), partsEl(clip(lin.text.replace(/^A study was performed[^.]*\.\d*\s*/i, ''), 280), ctx, 'p')));
+  const tools = h('div', { class: 'kn-head' }, h('h2', { text: 'Key numbers' }),
+    h('label', { class: 'toggle', title: 'Show calculated SI or conventional equivalents next to IFU values' },
+      h('input', { type: 'checkbox', checked: App.ui.si ? true : null, onchange: e => { App.ui.si = e.target.checked; saveUI(); renderDetail(); } }), ' Unit equivalents'),
+    h('span', { class: 'fine', text: 'Taken from the IFU automatically. Page links open the source.' }));
+  return h('section', { class: 'kn' }, tools, top, h('div', { class: 'cards' }, cards));
+}
+function box(title, chip, ...kids) { return h('div', { class: 'card' }, h('div', { class: 'lab' }, h('span', { text: title }), chip), ...kids); }
+const clip = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, s.lastIndexOf(' ', n - 1) > n * .6 ? s.lastIndexOf(' ', n - 1) : n - 1) + '…' : s; };
+const splitDots = s => String(s || '').split(/\s+·\s+/).filter(Boolean);
+function sameRange(a, b) { const n = s => (String(s).match(/\d[\d.,]*/g) || []).slice(0, 2).join('|'); return n(a) && n(a) === n(b); }
+function precisionTable(c, ctx) {
+  const rows = c.table.slice(0, 8);
+  const lot = rows.some(r => r.lot_cv_range), mtx = new Set(rows.map(r => r.matrix)).size > 1;
+  return h('table', { class: 'prec' },
+    h('thead', {}, h('tr', {}, mtx ? h('th', { text: 'Sample' }) : null, h('th', { text: 'Level' }), h('th', { class: 'r', text: 'CV' }), lot ? h('th', { class: 'r', text: 'Lot range' }) : null)),
+    h('tbody', {}, rows.map(r => h('tr', {}, mtx ? h('td', { class: 'mut', text: r.matrix }) : null, h('td', {}, partsEl(r.concentration, ctx)), h('td', { class: 'r num', text: r.reported_cv }), lot ? h('td', { class: 'r num mut', text: r.lot_cv_range }) : null))));
+}
+function specimenBody(c) {
+  const secs = c.sections && c.sections.length ? c.sections : [{ label: 'Accepted', lines: c.lines || splitDots(c.text) }];
+  const out = [];
+  for (const s of secs) {
+    if (!s.lines || !s.lines.length) continue;
+    if (/handling/i.test(s.label)) { out.push(h('details', { class: 'more' }, h('summary', { text: `Handling (${s.lines.length})` }), s.lines.map(l => h('div', { class: 'ln fine', text: l })))); continue; }
+    out.push(h('div', { class: 'sec' + (/not/i.test(s.label) ? ' no' : '') }, s.label && secs.length > 1 ? h('div', { class: 'sl', text: s.label }) : null, s.lines.map(l => h('div', { class: 'ln', text: clip(l, 200) }))));
+  }
+  return h('div', {}, out);
+}
+let noteTimer = 0;
+function noteBlock(d, u) {
+  const ta = h('textarea', { class: 'field note', rows: 2, placeholder: 'Your note for this assay, such as local reference interval, units we report, or a known issue. Synced to your other PC.', 'aria-label': `Your note for ${d.name}` });
+  ta.value = u.note || '';
+  const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(320, ta.scrollHeight + 2) + 'px'; };
+  ta.addEventListener('input', () => { grow(); clearTimeout(noteTimer); noteTimer = setTimeout(() => putUser(d.id, { note: ta.value.trim() }), 600); });
+  ta.addEventListener('blur', () => { clearTimeout(noteTimer); if ((userRec(d.id) || {}).note !== (ta.value.trim() || undefined)) putUser(d.id, { note: ta.value.trim() }); });
+  setTimeout(grow, 0);
+  return h('section', { class: 'mynote' }, h('h2', { text: 'My note' }), ta);
+}
+
+/* ----- PDF pane: the IFU opens beside the list, at the page you clicked ----- */
+let pdfState = null;
+async function openPdf(d, page, ev) {
+  const f = fileFor(d);
+  if (!f) { toast('That PDF isn’t in the Drive IFU folder.'); return; }
+  pushRecent(d.id);
+  const wantTab = ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button === 1);
+  const tab = wantTab ? window.open('', '_blank') : null;
+  const pane = $('#pdf');
+  const token = {};
+  pdfState = { d, page, token };
+  const title = h('div', { class: 'pt' }, h('b', { text: d.name }), h('span', { class: 'mut', text: page > 1 ? `  ·  page ${page}` : '' }));
+  const status = h('div', { class: 'pstatus' }, h('div', { class: 'bar' }, h('i')), h('p', { text: 'Opening…' }));
+  if (!tab) {
+    pane.replaceChildren(h('div', { class: 'phead' }, title,
+      h('button', { class: 'btn sm', icon: 'ext', disabled: true, 'data-newtab': '', text: 'New tab' }),
+      h('button', { class: 'ib', 'aria-label': 'Close the IFU (Esc)', title: 'Close (Esc)', icon: 'close', onclick: () => closePdf() })), status);
+    pane.hidden = false;
+    document.body.classList.add('pdf-open');
+  }
+  try {
+    const url = await pdfBlobUrl(f, msg => { const p = $('p', status); if (p) p.textContent = msg; });
+    if (pdfState.token !== token) return;
+    const src = url + '#page=' + (page || 1) + '&view=FitH';
+    if (tab) { tab.location.href = src; return; }
+    const nt = $('[data-newtab]', pane);
+    nt.disabled = false; nt.onclick = () => window.open(src, '_blank');
+    status.replaceWith(h('iframe', { class: 'pframe', src, title: `${d.name} IFU` }));
+    renderList();
+  } catch (e) {
+    if (tab) tab.close();
+    if (pdfState && pdfState.token !== token) return;
+    const msg = e.code === 'offline' ? 'You’re offline and this IFU isn’t saved in this browser yet.' : e.code === 'nosync' ? 'Connect Assays to Drive first.' : 'Couldn’t open the IFU: ' + errText(e.code, e.detail) + '.';
+    if (!tab) status.replaceChildren(h('p', { text: msg }), h('button', { class: 'btn', text: 'Try again', onclick: () => openPdf(d, page) }));
+    else toast(msg);
+  }
+}
+function closePdf(silent) {
+  const pane = $('#pdf');
+  if (!pane || pane.hidden) return false;
+  pdfState = null;
+  pane.hidden = true; pane.replaceChildren();
+  document.body.classList.remove('pdf-open');
+  if (!silent) $('#q').focus();
+  return true;
+}
+
+/* ============ settings and help ============ */
+function openSettings() {
+  const body = h('div', { class: 'settings' });
+  const draw = () => {
+    const S = App.sync, ex = extras(), n = cachedCount(), total = App.files.length;
+    body.replaceChildren(
+      h('section', {}, h('h3', { text: 'Connection' }),
+        syncReady()
+          ? h('div', {},
+            h('p', { class: 'mtext' }, h('b', { text: 'Connected' }), ` to your Assays script as “${S.device}”. `, S.lastSync ? `Last synced ${ago(S.lastSync)}.` : ''),
+            Sync.err ? h('p', { class: 'warnline', text: errText(Sync.err, Sync.detail) + '.' }) : null,
+            h('div', { class: 'btns' },
+              h('button', { class: 'btn sm', text: 'Sync now', onclick: async () => { await syncNow(true); draw(); } }),
+              h('button', { class: 'btn sm', icon: 'copy', text: 'Copy setup link', onclick: async () => { try { await navigator.clipboard.writeText(setupLink()); toast('Setup link copied. Treat it like a password.'); } catch (e) { toast('Couldn’t copy.'); } } }),
+              h('button', { class: 'btn sm danger', text: 'Disconnect this browser', onclick: () => { if (confirm('Disconnect Assays in this browser? Your library and saved PDFs stay here; pins and notes stay in Drive.')) { turnOff(); draw(); } } })))
+          : h('p', { class: 'mtext', text: 'Not connected. Open your Assays setup link in this browser.' })),
+      h('section', {}, h('h3', { text: 'Library' }),
+        App.lib ? h('p', { class: 'mtext' }, `${plural(App.lib.count, 'IFU')}, built ${fmtDate(App.lib.built)}. `, App.files.length ? `${plural(total, 'PDF')} in the Drive IFU folder` : '', App.folderUrl ? h('span', {}, ' (', h('a', { href: App.folderUrl, target: '_blank', rel: 'noopener noreferrer', text: 'open folder' }), ')') : '', '.') : h('p', { class: 'mtext', text: 'No library in this browser yet.' }),
+        ex.length ? h('p', { class: 'warnline', text: `${plural(ex.length, 'PDF')} added since then ${ex.length === 1 ? 'is' : 'are'} listed under “Not indexed yet” and can be opened, but not searched. Ask Claude to rebuild the library to add ${ex.length === 1 ? 'it' : 'them'}.` }) : null,
+        !App.folderFound ? h('p', { class: 'warnline', text: errText('no_ifu_folder') + '.' }) : null,
+        h('div', { class: 'btns' }, h('button', { class: 'btn sm', text: 'Check for updates', disabled: !syncReady(), onclick: async () => { await refreshLibrary(true); refreshSgh(true); draw(); } }))),
+      h('section', {}, h('h3', { text: 'Offline' }),
+        h('p', { class: 'mtext' }, `The library is saved in this browser, so search and key numbers work offline. ${plural(n, 'IFU')} of ${total} ${n === 1 ? 'is' : 'are'} saved here too (${AL.mb(cachedBytes())}); others are fetched from Drive the first time you open them.`),
+        h('div', { class: 'btns' },
+          h('button', { class: 'btn sm', icon: 'download', disabled: !syncReady() || n >= total, text: n >= total && total ? 'All IFUs saved' : 'Save all IFUs for offline', onclick: e => saveAllPdfs(e.currentTarget, draw) }),
+          h('button', { class: 'btn sm', disabled: !n, text: 'Remove saved IFUs', onclick: async () => { await clearPdfs(); draw(); } }))),
+      h('section', {}, h('h3', { text: 'Your pins and notes' }),
+        h('p', { class: 'mtext', text: `${plural([...App.user.values()].filter(r => r.pin).length, 'pin')} and ${plural([...App.user.values()].filter(r => r.note).length, 'note')}. Kept in Drive › 00_Apps › Assays, with daily backups in its backups folder.` }),
+        h('div', { class: 'btns' }, h('button', { class: 'btn sm', icon: 'download', text: 'Download as a file', onclick: exportUser }))),
+      h('p', { class: 'fine', text: `Assays ${typeof BUILD === 'string' ? BUILD : ''}. IFU content is never part of this public page; it comes only from your Drive.` }));
+  };
+  draw();
+  modal({ title: 'Settings', body, wide: true });
+}
+async function saveAllPdfs(btn, draw) {
+  const todo = App.files.filter(f => !(App.pdfs[f.id] && App.pdfs[f.id].modified === f.modified));
+  let done = 0, failed = 0;
+  btn.disabled = true;
+  for (const f of todo) {
+    btn.textContent = `Saving ${done + 1} of ${todo.length}…`;
+    try { await pdfBlobUrl(f); } catch (e) { failed++; if (e.code === 'offline' || e.code === 'bad_key') break; }
+    done++;
+  }
+  await saveNow();
+  toast(failed ? `Saved ${done - failed} IFUs; ${failed} couldn’t be fetched. Try again later.` : `All ${App.files.length} IFUs are saved for offline use.`);
+  draw();
+}
+async function clearPdfs() {
+  for (const k of (await Store.keys()).filter(k => String(k).startsWith('pdf:'))) await Store.del(k);
+  for (const u of blobUrls.values()) URL.revokeObjectURL(u);
+  blobUrls.clear(); App.pdfs = {};
+  await saveNow();
+  toast('Saved IFUs removed from this browser. They’ll be fetched from Drive when you open them.');
+}
+function exportUser() {
+  const recs = [...App.user.values()].filter(r => r.pin || r.note).map(r => Object.assign({ assay: (docById(r.doc) || {}).name || r.doc }, r));
+  const blob = new Blob([JSON.stringify({ kind: 'assays-pins-notes', exported: new Date().toISOString(), records: recs }, null, 2)], { type: 'application/json' });
+  const a = h('a', { href: URL.createObjectURL(blob), download: `assays-pins-notes-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a); a.click(); a.remove();
+}
+function openHelp() {
+  const k = (...keys) => h('span', { class: 'keys' }, keys.map(x => h('kbd', { text: x })));
+  modal({ title: 'Using Assays', body: h('div', { class: 'help' },
+    h('p', { class: 'mtext', text: 'Type to find an assay by name or by the abbreviation you use (ALT, hCG, FT4, paracetamol). Words that aren’t an assay name are searched inside all the IFUs, for example biotin, heterophile or "high dose hook".' }),
+    h('table', { class: 'keys-t' }, h('tbody', {},
+      [[k('/'), 'Search from anywhere'], [k('↑', '↓'), 'Move through the list'], [k('Enter'), 'Open the IFU (at the first matching page when you searched inside the IFUs)'],
+        [k('Esc'), 'Close the IFU, then clear the search'], [k('P'), 'Pin or unpin the assay'], [k('M'), 'Mayo Clinic Labs for this assay'], [k('S'), 'SGH test directory for this assay'],
+        [k('Ctrl', 'click'), 'Open the IFU in a new tab']].map(([a, b]) => h('tr', {}, h('td', {}, a), h('td', { text: b }))))),
+    h('p', { class: 'mtext', text: 'Key numbers are read from the IFU automatically. An amber “Check” link means the reading was uncertain; the page link always opens the source.' }),
+    h('p', { class: 'mtext', text: 'Page links open the IFU beside the list. The first time, a PDF comes from your Drive; after that it opens from this browser, even offline.' })) });
+}
+
+/* ============ setup link ============ */
+function setupLink() {
+  const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ u: App.sync.url, k: App.sync.key })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return location.origin + location.pathname + '#sync=' + payload;
+}
+function readSetupHash() {
+  const m = /^#sync=([A-Za-z0-9_-]+)$/.exec(location.hash || '');
+  if (!m) return null;
+  let o = null;
+  try { const b = m[1].replace(/-/g, '+').replace(/_/g, '/'); o = JSON.parse(decodeURIComponent(escape(atob(b + '==='.slice((b.length + 3) % 4))))); } catch (e) { }
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+  return o && o.u && o.k ? { url: o.u, key: o.k } : null;
+}
+function deviceGuess() {
+  const ua = navigator.userAgent || '';
+  const os = /Windows/.test(ua) ? 'Windows PC' : /Mac/.test(ua) ? 'Mac' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iPhone or iPad' : 'Computer';
+  return os + ' ' + Math.random().toString(36).slice(2, 6);
+}
+function offerSetupLink(link) {
+  if (!validScriptUrl(link.url)) { toast('That setup link isn’t a Google Apps Script link, so it was ignored.'); return; }
+  if (link.url === App.sync.url && link.key === App.sync.key) { refreshLibrary(true); return; }
+  const dev = h('input', { class: 'field', value: App.sync.device || deviceGuess(), 'aria-label': 'Name for this PC', autofocus: true });
+  modal({
+    title: 'Connect this browser to your IFU library?',
+    body: [h('p', { class: 'mtext', text: 'Assays will load your IFU library and PDFs from your Google Drive through your own Assays script, and keep your pins and notes in step with your other PC.' }),
+      h('label', { class: 'fl' }, h('span', { text: 'Name for this PC (shown in sync details)' }), dev),
+      h('p', { class: 'hint', text: 'Only continue if this link came from your own email or script.' })],
+    actions: [{ label: 'Not now' }, { label: 'Connect', primary: true, act: () => { connect(link.url, link.key, dev.value.trim() || deviceGuess()); return true; } }],
+  });
+}
+async function connect(url, key, device) {
+  const S = App.sync, changedServer = url !== S.url;
+  S.url = url; S.key = key; S.device = device;
+  if (changedServer) { S.base = {}; S.baseData = {}; S.purge = {}; for (const id of App.user.keys()) S.dirty[id] = 1; }
+  Sync.err = null;
+  await saveNow();
+  await refreshLibrary(false);
+  if (!App.libErr) toast(`Connected. ${App.lib ? plural(App.lib.count, 'IFU') + ' ready.' : ''}`);
+  syncNow(false);
+  refreshSgh(false);
+}
+function turnOff() {
+  const S = App.sync;
+  S.url = ''; S.key = ''; S.base = {}; S.baseData = {}; S.purge = {}; S.server = null;
+  for (const id of App.user.keys()) S.dirty[id] = 1;
+  saveNow(); render();
+  toast('Disconnected. The library stays in this browser.');
+}
+
+/* ============ boot ============ */
+const narrow = () => typeof matchMedia === 'function' && matchMedia('(max-width: 820px)').matches;
+let releaseLock = null, bc = null;
+function holdLock(wait) {
+  return new Promise(res => {
+    if (!navigator.locks || !navigator.locks.request) return res(true);
+    const cb = lock => { if (!lock) { res(false); return; } res(true); return new Promise(r => { releaseLock = r; }); };
+    if (wait) { navigator.locks.request('assays-main', cb); return; }
+    navigator.locks.request('assays-main', { ifAvailable: true }, cb).catch(() => res(false));
+  });
+}
+function showElsewhere(text, btn, fn) {
+  const el = $('#elsewhere');
+  el.replaceChildren(h('div', { class: 'modal', style: { padding: '28px', textAlign: 'center', width: 'min(440px,100%)' } }, h('p', { class: 'mtext', text }), h('button', { class: 'btn primary', text: btn, onclick: fn })));
+  el.hidden = false;
+}
+async function boot() {
+  loadUI();
+  try { bc = new BroadcastChannel('assays-app'); } catch (e) { bc = null; }
+  if (bc) bc.onmessage = async e => {
+    if (!e.data || e.data.from === App.tab) return;
+    if (e.data.t === 'takeover' && App.owner) {
+      await flush();
+      App.owner = false; App.booted = false; clearTimeout(Sync.timer);
+      if (releaseLock) releaseLock();
+      showElsewhere('Assays is now open in another tab.', 'Use it here instead', () => location.reload());
+    }
+  };
+  if (!await holdLock(false)) {
+    showElsewhere('Assays is already open in another tab.', 'Use it here instead', async () => {
+      if (bc) bc.postMessage({ t: 'takeover', from: App.tab });
+      $('#elsewhere').hidden = true;
+      await holdLock(true);
+      start();
+    });
+    return;
+  }
+  start();
+}
+async function start() {
+  App.owner = true;
+  await Store.open();
+  try {
+    const [state, lib, files, sgh] = await Promise.all([Store.get('state'), Store.get('lib'), Store.get('files'), Store.get('sgh')]);
+    if (state) {
+      App.user = new Map((state.user || []).map(r => [r.id, r]));
+      Object.assign(App.sync, state.sync || {});
+      App.pdfs = state.pdfs || {};
+    }
+    if (lib && lib.docs) setLibrary(lib);
+    if (files) { App.files = files.list || []; App.filesAt = files.at || 0; App.folderUrl = files.folderUrl || ''; App.folderFound = files.folderFound !== false; FILES = fileByName(); }
+    if (sgh) App.sgh = sgh;
+  } catch (e) { toast('This browser couldn’t read the saved library. It will be fetched again.'); }
+  bindUI();
+  App.booted = true;
+  const link = /^#sync=/.test(location.hash) ? readSetupHash() : null;
+  render();
+  if (App.ix && !App.ui.sel && App.ix.docs.length) { /* leave the welcome hint until something is picked */ }
+  window.addEventListener('online', () => { Sync.err = null; updatePill(); syncNow(false); });
+  window.addEventListener('offline', () => { Sync.err = 'offline'; updatePill(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { syncNow(false); if (Date.now() - App.filesAt > 3600000) refreshLibrary(false); } else flush(); });
+  window.addEventListener('pagehide', () => { flush(); });
+  setInterval(() => { if (document.visibilityState === 'visible') syncNow(false); }, 180000);
+  setInterval(updatePill, 30000);
+  if (syncReady()) { refreshLibrary(false); setTimeout(() => syncNow(false), 600); setTimeout(() => refreshSgh(false), 2500); }
+  if (link) offerSetupLink(link);
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => { });
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { });
+  if (!TOUCH) setTimeout(() => { const q = $('#q'); if (q && !q.disabled && !document.querySelector('#modal-root .scrim')) q.focus(); }, 50);
+}
+function bindUI() {
+  $('#settings-btn').innerHTML = ICON.gear; $('#help-btn').innerHTML = ICON.help;
+  $('#qicon').innerHTML = ICON.search;
+  $('#settings-btn').onclick = openSettings;
+  $('#help-btn').onclick = openHelp;
+  $('#sync-pill').onclick = openSettings;
+  const q = $('#q');
+  q.addEventListener('input', () => { setQuery(q.value); $('#qclear').hidden = !q.value; });
+  $('#qclear').onclick = () => { q.value = ''; $('#qclear').hidden = true; setQuery('', true); q.focus(); };
+  q.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (qTimer) { clearTimeout(qTimer); qTimer = 0; runQuery(); } moveSel(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (qTimer) { clearTimeout(qTimer); qTimer = 0; runQuery(); }
+      const d = anyDoc(App.ui.sel); if (!d) return;
+      const tg = textGroupFor(d.id), viaText = tg && !App.names.some(x => x.id === d.id);
+      openPdf(d, viaText ? tg.hits[0].page : 1, e);
+    } else if (e.key === 'Escape') {
+      if (closePdf(true)) { e.preventDefault(); return; }
+      if (q.value) { e.preventDefault(); q.value = ''; $('#qclear').hidden = true; setQuery('', true); }
+      else q.blur();
+    }
+  });
+  window.addEventListener('hashchange', () => { if (/^#sync=/.test(location.hash)) { const l = readSetupHash(); if (l) offerSetupLink(l); } });
+  document.addEventListener('keydown', onKey);
+  window.addEventListener('resize', () => { if (!narrow()) document.body.classList.remove('show-detail'); });
+}
+function onKey(e) {
+  if (!App.booted || e.defaultPrevented) return;
+  if (document.querySelector('#modal-root .scrim') || !$('#elsewhere').hidden) return;
+  const t = e.target, typing = t && t.closest && t.closest('input,textarea,select,[contenteditable]');
+  if ((e.key === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !typing)) { e.preventDefault(); const q = $('#q'); q.focus(); q.select(); return; }
+  if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+  const d = anyDoc(App.ui.sel);
+  if (e.key === 'Escape') { if (!closePdf()) { if (App.q) { $('#q').value = ''; setQuery('', true); } } }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
+  else if (e.key === 'Enter' && d && !(t && t.closest && t.closest('button,a'))) { e.preventDefault(); openPdf(d, 1, e); }
+  else if ((e.key === 'p' || e.key === 'P') && d) togglePin(d);
+  else if ((e.key === 'm' || e.key === 'M') && d && !d.extra) window.open(AL.mayoUrl(d.mayo || d.name), '_blank', 'noopener');
+  else if ((e.key === 's' || e.key === 'S') && d && !d.extra) { const t = sghTarget(d); if (t.copy) copyQuiet(t.copy); window.open(t.url, '_blank', 'noopener'); }
+  else if (e.key === '?') openHelp();
+}
+boot();
+
+</script>
+</body>
+</html>
