@@ -260,7 +260,7 @@ details.paste .row:hover{background:none}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="elsewhere" id="elsewhere" hidden></div>
 <script>
-const BUILD = "1.0 · 75785f";
+const BUILD = "1.0 · f339d9";
 /* ============ Assays logic: pure functions, no page access (tested in Node) ============ */
 (function (root) {
   const AL = {};
@@ -432,16 +432,22 @@ const BUILD = "1.0 · 75785f";
   AL.SGH_CATALOGUE = 'https://www.sgh.com.sg/our-specialties/pathology/pathology-lab-services';
 
   // Best SGH test for an assay: every word of the assay's SGH term must appear in the test name.
+  // Prefers the plain serum/plasma test over urine, antibody, ratio or panel variants.
+  const SGH_SIDE = /\b(urine|csf|fluid|stool|bal|faeces|feces|sweat|saliva|dialysate|amniotic)\b/;
+  const SGH_OTHER = /\b(antibod\w*|receptor|ratio|index|electrophoresis|screen\w*|gene|dna|rna|pcr|mutation|genotyp\w*|isoenzyme\w*|fraction\w*|clearance|excretion|challenge|stimulation|suppression|panel|profile|free|bound|binding|direct|indirect|ionic|ionised|ionized|hdl|ldl|calculated|random|timed)\b/g;
   function sghMatch(tests, term) {
     const want = words(term);
     if (!want.length || !Array.isArray(tests)) return null;
+    const tf = fold(term);
     let best = null;
     for (const t of tests) {
-      const nw = words(t.n);
+      const nf = fold(t.n), nw = words(t.n);
       if (!want.every(w => nw.some(x => x === w || (w.length >= 3 && x.startsWith(w))))) continue;
-      const extra = nw.length - want.length;
-      const urine = /urine|csf|fluid|24 ?h/i.test(t.n) && !/urine|csf/i.test(term) ? 4 : 0;
-      const s = extra + urine;
+      let s = nw.length - want.length;
+      if (SGH_SIDE.test(nf) && !SGH_SIDE.test(tf)) s += 8;
+      const other = (nf.match(SGH_OTHER) || []).filter(w => !tf.includes(w));
+      s += other.length * 6;
+      if (/\b(serum|plasma|blood)\b/.test(nf)) s -= 3;
       if (!best || s < best.s) best = { t, s };
     }
     return best ? best.t : null;
